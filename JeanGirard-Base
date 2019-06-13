@@ -1,0 +1,111 @@
+def reward_function(params):
+    '''
+    Example of penalize steering, which helps mitigate zig-zag behaviors
+    '''
+    
+    # Read input parameters
+    distance_from_center = params['distance_from_center']
+    track_width = params['track_width']
+    steering = abs(params['steering_angle']) # Only need the absolute steering angle
+    all_wheels_on_track = params['all_wheels_on_track']
+    progress = params['progress']
+    steps = params['steps']
+    x_pos = params['x']
+    y_pos = params['y']
+    heading = params['heading']
+
+
+    ##Zone Finder
+    ##Zone1 - if between 2.2 and 7.5 x and under -2.4 y
+    ##Zone2 - if between -1.5 and .75 y and above 8.5 x
+    ##Zone3 - Anywhere else
+    if x_pos >= 2.2 and x_pos <= 7.5 and y_pos >= -2.4:
+        zone = 1
+    elif -1.5 >= y_pos >= .75 and x_pos >= 8.5:
+        zone = 2
+    else:
+        zone = 0
+
+    # Calculate 3 markers that are at varying distances away from the center line
+    marker_1 = 0.1 * track_width
+    marker_2 = 0.25 * track_width
+    marker_3 = 0.5 * track_width
+
+    TOTAL_NUM_STEPS = 22.63
+    STEP_COUNT = (steps % 100)
+
+    #Zone 1 Rewards
+    if zone = 1:
+        if 10 >= heading >= -10:
+            reward = 10 
+
+    # Give higher reward if the agent is closer to center line and vice versa
+        if distance_from_center <= marker_1:
+            reward *= 1
+        elif distance_from_center <= marker_2:
+            reward *= 0.8
+        elif distance_from_center <= marker_3:
+            reward *= 0.2
+        else:
+            reward = 1e-3  # likely crashed/ close to off track
+
+    #Penalize reward if a wheel leaves the track
+        if not all_wheels_on_track:
+            reward *= 0.8
+
+    #Penalize reward for going too slowly
+        if params['speed'] != 8:
+            reward *= 0.1
+    #Zone 2 Rewards
+    elif zone = 2:
+        if 100 >= heading >= 80:
+            reward = 10 
+
+    # Give higher reward if the agent is closer to center line and vice versa
+        if distance_from_center <= marker_1:
+            reward *= 1
+        elif distance_from_center <= marker_2:
+            reward *= 0.8
+        elif distance_from_center <= marker_3:
+            reward *= 0.2
+        else:
+            reward = 1e-3  # likely crashed/ close to off track
+
+    #Penalize reward if a wheel leaves the track
+        if not all_wheels_on_track:
+            reward *= 0.8
+
+    #Penalize reward for going too slowly
+        if params['speed'] != 8:
+            reward *= 0.1
+
+    #Zone 0 Rewards
+    else:
+            # Give higher reward if the agent is closer to center line and vice versa
+        if distance_from_center <= marker_1:
+            reward *= 10
+        elif distance_from_center <= marker_2:
+            reward *= 0.8
+        elif distance_from_center <= marker_3:
+            reward *= 0.2
+        else:
+            reward = 1e-3  # likely crashed/ close to off track
+
+    #Penalize reward if a wheel leaves the track
+        if not all_wheels_on_track:
+            reward *= 0.8
+
+    #Penalize reward for going too slowly
+        SPEED_THRESHOLD = 5.32
+        if params['speed'] < SPEED_THRESHOLD:
+            reward *= 0.6            
+        
+	# Give additional reward if the car pass every 100 steps faster than expected 
+    if STEP_COUNT == 0 and progress > (steps / TOTAL_NUM_STEPS):
+        reward += 10.0
+
+    #Progress Reward
+    if progress == 100:
+        reward += 10000
+
+    return float(reward)
